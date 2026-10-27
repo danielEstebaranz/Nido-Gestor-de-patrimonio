@@ -3,6 +3,14 @@
 Gestor de patrimonio personal para **Android, Windows y web**, con una sola base de código en Flutter y
 sincronización en tiempo real entre dispositivos mediante **Firebase** (Authentication + Cloud Firestore).
 
+## Descargas
+
+Versión compilada, lista para usar con el proyecto de Firebase `nido-b0061`:
+
+- **Windows**: [descargas/Nido-Windows.zip](descargas/Nido-Windows.zip). Descomprime la carpeta entera y abre `Nido.exe`.
+- **Android**: [descargas/Nido-arm64.apk](descargas/Nido-arm64.apk). Para casi cualquier móvil actual; hay que permitir
+  instalar apps de origen desconocido.
+
 ## Qué hace
 
 - **Resumen**: patrimonio neto (activos − deudas) con su evolución mensual, variación frente al mes anterior,
