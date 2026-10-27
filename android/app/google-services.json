@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "175390680311",
+    "project_id": "nido-b0061",
+    "storage_bucket": "nido-b0061.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175390680311:android:4012893749e9bb40f21ff2",
+        "android_client_info": {
+          "package_name": "com.nidoapp.nido"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmTmo6l0b-NBa85BPCf022HijcjV24xPo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,151 @@
+rules_version = '2';
+
+// Cada usuario solo puede leer y escribir dentro de users/{suUid}.
+// Además se valida la forma de cada documento para que un cliente
+// modificado no pueda guardar datos corruptos.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function data() {
+      return request.resource.data;
+    }
+
+    // Máximo ±10^13 € expresado en céntimos.
+    function isMoney(v) {
+      return v is int && v >= -1000000000000000 && v <= 1000000000000000;
+    }
+
+    function isPositiveMoney(v) {
+      return isMoney(v) && v > 0;
+    }
+
+    function isText(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    function isName(v) {
+      return isText(v, 60) && v.size() > 0;
+    }
+
+    // createdAt se fija al crear y no cambia; updatedAt es siempre la hora del servidor.
+    function validTimestamps() {
+      return data().updatedAt == request.time
+        && (resource == null
+              ? data().createdAt == request.time
+              : data().createdAt == resource.data.createdAt);
+    }
+
+    function validAccount() {
+      return data().keys().hasOnly(['name', 'type', 'institution', 'balanceCents', 'createdAt', 'updatedAt'])
+        && isName(data().name)
+        && data().type in ['cash', 'bank', 'savings', 'investment', 'crypto', 'property', 'vehicle', 'other',
+                           'creditCard', 'loan', 'mortgage']
+        && isText(data().institution, 60)
+        && isMoney(data().balanceCents)
+        && validTimestamps();
+    }
+
+    function validMovement() {
+      return data().keys().hasOnly(['kind', 'amountCents', 'accountId', 'toAccountId', 'category', 'note',
+                                    'date', 'createdAt', 'updatedAt'])
+        && data().kind in ['income', 'expense', 'transfer']
+        && isPositiveMoney(data().amountCents)
+        && isName(data().accountId)
+        && (data().kind == 'transfer'
+              ? isName(data().toAccountId) && data().toAccountId != data().accountId
+              : data().get('toAccountId', null) == null)
+        && isText(data().category, 30)
+        && isText(data().note, 120)
+        && data().date is timestamp
+        && validTimestamps();
+    }
+
+    function validGoal() {
+      return data().keys().hasOnly(['name', 'targetCents', 'savedCents', 'accountIds', 'deadline', 'targetMonths',
+                                    'createdAt', 'updatedAt'])
+        // Objetivo dinámico: meses de gasto (el importe se recalcula en la app).
+        && (data().get('targetMonths', null) == null
+              || (data().targetMonths is int && data().targetMonths >= 1 && data().targetMonths <= 24))
+        && isName(data().name)
+        && isPositiveMoney(data().targetCents)
+        && isMoney(data().savedCents)
+        && data().accountIds is list && data().accountIds.size() <= 50
+        && (data().get('deadline', null) == null || data().deadline is timestamp)
+        && validTimestamps();
+    }
+
+    function validSnapshot(month) {
+      return month.matches('^[0-9]{4}-[0-9]{2}$')
+        && data().keys().hasOnly(['assetsCents', 'liabilitiesCents', 'updatedAt'])
+        && isMoney(data().assetsCents)
+        && isMoney(data().liabilitiesCents)
+        && data().updatedAt == request.time;
+    }
+
+    function optMoney(field) {
+      return data().get(field, null) == null || isMoney(data()[field]);
+    }
+
+    function optText(field, max) {
+      return data().get(field, null) == null || isText(data()[field], max);
+    }
+
+    // Programaciones: movimientos que se repiten y préstamos a plazos.
+    // nextIndex (repeticiones ya procesadas) solo puede avanzar: así nunca se
+    // vuelve a apuntar una cuota o un cargo que ya se apuntó.
+    function validRecurrence() {
+      return data().keys().hasOnly(['type', 'frequency', 'startDate', 'accountId', 'kind', 'amountCents',
+                                    'previousAmountCents', 'toAccountId', 'category', 'note', 'count', 'endDate',
+                                    'nextIndex', 'auto', 'principalCents', 'rateBps', 'months', 'payAccountId',
+                                    'createdAt', 'updatedAt'])
+        && data().type in ['movement', 'installment']
+        && data().frequency in ['weekly', 'monthly', 'quarterly', 'yearly']
+        && data().startDate is timestamp
+        && isName(data().accountId)
+        && data().nextIndex is int && data().nextIndex >= 0 && data().nextIndex <= 10000
+        && (resource == null || data().nextIndex >= resource.data.nextIndex)
+        && data().auto is bool
+        && isText(data().note, 120)
+        && optText('category', 30)
+        && optText('toAccountId', 60)
+        && optText('payAccountId', 60)
+        && optMoney('previousAmountCents')
+        && (data().get('count', null) == null || (data().count is int && data().count > 0 && data().count <= 10000))
+        && (data().get('endDate', null) == null || data().endDate is timestamp)
+        && (data().type == 'movement'
+              ? data().kind in ['income', 'expense', 'transfer'] && isPositiveMoney(data().amountCents)
+              : isPositiveMoney(data().principalCents)
+                && data().rateBps is int && data().rateBps >= 0 && data().rateBps <= 10000
+                && data().months is int && data().months > 0 && data().months <= 600
+                && isName(data().payAccountId))
+        && validTimestamps();
+    }
+
+    match /users/{uid} {
+      match /recurrences/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validRecurrence();
+      }
+      match /accounts/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validAccount();
+      }
+      match /movements/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validMovement();
+      }
+      match /goals/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validGoal();
+      }
+      match /snapshots/{month} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validSnapshot(month);
+      }
+    }
+  }
+}
