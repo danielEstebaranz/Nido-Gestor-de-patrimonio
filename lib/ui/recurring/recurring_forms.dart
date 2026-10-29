@@ -10,6 +10,7 @@ import '../../models/movement.dart';
 import '../../models/recurrence.dart';
 import '../privacy.dart';
 import '../theme.dart';
+import '../widgets/account_item.dart';
 import '../widgets/common.dart';
 import '../widgets/crt.dart';
 
@@ -200,15 +201,7 @@ class _RecurrenceFormState extends State<RecurrenceForm> {
   Widget build(BuildContext context) {
     final accounts = context.watch<NidoStore>().accounts;
     final items = [
-      for (final a in accounts)
-        DropdownMenuItem(
-          value: a.id,
-          child: Row(children: [
-            Icon(a.type.icon, size: 20, color: a.isLiability ? Crt.redText : Crt.green),
-            const SizedBox(width: 12),
-            Flexible(child: Text(a.name, overflow: TextOverflow.ellipsis)),
-          ]),
-        ),
+      for (final a in accounts) accountMenuItem(context, a, accounts),
     ];
     final transfer = _kind == MovementKind.transfer;
     final amount = parseCents(_amount.text);
@@ -526,15 +519,7 @@ class _InstallmentFormState extends State<InstallmentForm> {
                   value: _newDebt,
                   child: Row(children: [Icon(Icons.add, size: 20, color: Crt.amber), SizedBox(width: 12), Text('Crear una deuda nueva')]),
                 ),
-                for (final a in debts)
-                  DropdownMenuItem(
-                    value: a.id,
-                    child: Row(children: [
-                      Icon(a.type.icon, size: 20, color: Crt.redText),
-                      const SizedBox(width: 12),
-                      Flexible(child: Text(a.name, overflow: TextOverflow.ellipsis)),
-                    ]),
-                  ),
+                for (final a in debts) accountMenuItem(context, a, debts),
               ],
               onChanged: _p != null ? null : (v) => setState(() => _debtId = v ?? _debtId),
             ),
@@ -595,11 +580,7 @@ class _InstallmentFormState extends State<InstallmentForm> {
               isExpanded: true,
               dropdownColor: Crt.panelHigh,
               items: [
-                for (final a in liquid)
-                  DropdownMenuItem(
-                    value: a.id,
-                    child: Row(children: [Icon(a.type.icon, size: 20, color: Crt.green), const SizedBox(width: 12), Text(a.name)]),
-                  ),
+                for (final a in liquid) accountMenuItem(context, a, liquid),
               ],
               onChanged: (v) => setState(() => _payId = v ?? _payId),
             ),

@@ -8,6 +8,7 @@ import '../../domain/portfolio.dart';
 import '../../models/account.dart';
 import '../../models/movement.dart';
 import '../theme.dart';
+import '../widgets/account_item.dart';
 import '../widgets/common.dart';
 import '../widgets/crt.dart';
 import '../privacy.dart';
@@ -379,15 +380,7 @@ class _MovementFormState extends State<MovementForm> {
   Widget build(BuildContext context) {
     final accounts = context.watch<NidoStore>().accounts;
     final accountItems = [
-      for (final a in accounts)
-        DropdownMenuItem(
-          value: a.id,
-          child: Row(children: [
-            Icon(a.type.icon, size: 20, color: a.isLiability ? Crt.redText : Crt.green),
-            const SizedBox(width: 12),
-            Flexible(child: Text(a.name, overflow: TextOverflow.ellipsis)),
-          ]),
-        ),
+      for (final a in accounts) accountMenuItem(context, a, accounts),
     ];
     final transfer = _kind == MovementKind.transfer;
 

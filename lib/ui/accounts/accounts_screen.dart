@@ -7,6 +7,7 @@ import '../../data/nido_store.dart';
 import '../../domain/portfolio.dart';
 import '../../models/account.dart';
 import '../theme.dart';
+import '../widgets/account_item.dart';
 import '../widgets/common.dart';
 import '../widgets/crt.dart';
 import '../privacy.dart';
@@ -244,8 +245,12 @@ class _QuickAdd extends StatelessWidget {
   }
 }
 
-void openAccountForm(BuildContext context, {Account? account, AccountType? presetType, String? presetName}) =>
-    showForm<void>(context, AccountForm(account: account, presetType: presetType, presetName: presetName));
+/// Con [presetName] (plantillas de "Añadir rápido") el nombre se numera si ya
+/// existe, para no acabar con dos "Cuenta de ahorro" iguales.
+void openAccountForm(BuildContext context, {Account? account, AccountType? presetType, String? presetName}) {
+  final name = presetName == null ? null : uniqueAccountName(presetName, context.read<NidoStore>().accounts);
+  showForm<void>(context, AccountForm(account: account, presetType: presetType, presetName: name));
+}
 
 class AccountForm extends StatefulWidget {
   const AccountForm({super.key, this.account, this.presetType, this.presetName});

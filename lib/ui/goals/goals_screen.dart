@@ -7,6 +7,7 @@ import '../../data/nido_store.dart';
 import '../../domain/portfolio.dart';
 import '../../models/goal.dart';
 import '../theme.dart';
+import '../widgets/account_item.dart';
 import '../widgets/common.dart';
 import '../widgets/crt.dart';
 import '../widgets/tape.dart';
@@ -494,7 +495,7 @@ class _GoalFormState extends State<GoalForm> {
               child: Wrap(spacing: 8, runSpacing: 8, children: [
                 for (final a in assets)
                   FilterChip(
-                    label: Text(a.name.toUpperCase()),
+                    label: Text(accountLabel(context, a, assets).toUpperCase()),
                     selected: _accountIds.contains(a.id),
                     onSelected: (v) => setState(() => v ? _accountIds.add(a.id) : _accountIds.remove(a.id)),
                   ),
